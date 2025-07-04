@@ -23,7 +23,8 @@ app.get("/health", (req, res) => {
 
 // Default route
 app.get("/", (req, res) => {
-  res.send("Server is running!");
+  console.log("Server is running !");
+  res.send("Server is running !");
 });
 
 // Main scraper endpoint
