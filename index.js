@@ -1,7 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-
+import axios from "axios";
+import * as cheerio from 'cheerio';
 import { scrapeContactInfo } from "./lib/scrapper.js";
 
 dotenv.config();
@@ -25,6 +26,33 @@ app.get("/", (req, res) => {
   res.send("Server is running!");
 });
 
+// Main scraper endpoint
+app.get("/scraper", async (req, res) => {
+  const url = req.query.url;
+  if (!url) return res.status(400).json({ error: "Missing url query parameter" });
+
+  try {
+    console.log(`Fetching: ${url}`);
+    const response = await axios.get(url, { timeout: 20000 });
+    const $ = cheerio.load(response.data);
+
+    const text = $("body").text();
+
+    const emails = text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-z]{2,}/g) || [];
+    const phones = text.match(/(\+?\d[\d\s().-]{7,})/g) || [];
+
+    const uniqueEmails = [...new Set(emails.map(e => e.trim()))];
+    const uniquePhones = [...new Set(phones.map(p => p.trim()))];
+
+    res.json({
+      emails: uniqueEmails,
+      phoneNumbers: uniquePhones,
+    });
+  } catch (error) {
+    console.error("Scraping error:", error.message);
+    res.status(500).json({ error: "Failed to scrape. Check URL or server logs." });
+  }
+});
 
 //scrapper
 
